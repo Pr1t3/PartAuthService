@@ -8,11 +8,21 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func getIp(r *http.Request) string {
+	if ipAddress := r.Header.Get("X-Forwarded-For"); ipAddress != "" {
+		ips := strings.Split(ipAddress, ",")
+		return strings.TrimSpace(ips[0])
+	}
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	return ip
+}
 
 type Handler struct {
 	jwtCreator   service.JwtCreatorInterface
@@ -29,10 +39,7 @@ func NewHandler(jwtCreator service.JwtCreatorInterface, repoService service.Repo
 }
 
 func (h *Handler) GetTokens(w http.ResponseWriter, r *http.Request) {
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		ip = r.RemoteAddr
-	}
+	ip := getIp(r)
 
 	userId := chi.URLParam(r, "userId")
 	accessToken, _, err := h.jwtCreator.CreateToken(userId, ip, 30*time.Minute, "")
@@ -112,10 +119,7 @@ func (h *Handler) RenewAccessToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		ip = r.RemoteAddr
-	}
+	ip := getIp(r)
 
 	if session.IpAddress != ip {
 		err = h.smtpProvider.SendMail(fmt.Sprintf("Your address has changed: was %s, now %s", session.IpAddress, ip))
