@@ -14,7 +14,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		log.Printf("Error loading .env file: %v", err)
 	}
 	secretKey := os.Getenv("SECRET_KEY")
 	user := os.Getenv("POSTGRES_USER")
@@ -26,9 +26,10 @@ func main() {
 	smtpHost := os.Getenv("SMTP_HOST")
 	smtpPort := os.Getenv("SMTP_PORT")
 	smtpPassword := os.Getenv("SMTP_PASSWORD")
-	servicePort := os.Getenv("SERVICE_PORT")
+	servicePort := os.Getenv("PORT")
+	hostName := os.Getenv("HOST_NAME")
 
-	database, err := db.NewDatabase(fmt.Sprintf("postgresql://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbName))
+	database, err := db.NewDatabase(fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable", user, password, hostName, port, dbName))
 	if err != nil {
 		panic(err)
 	}
